@@ -8,6 +8,8 @@ from .settings import cachalot_settings
 from .signals import post_invalidation
 from .transaction import AtomicCache
 
+EMPTY_CACHE = {}
+
 
 class CacheHandler(local):
     @property
@@ -36,12 +38,15 @@ class CacheHandler(local):
     def enter_atomic(self, db_alias):
         if db_alias is None:
             db_alias = DEFAULT_DB_ALIAS
-        self.atomic_caches[db_alias].append({})
+        self.atomic_caches[db_alias].append(EMPTY_CACHE)
 
     def exit_atomic(self, db_alias, commit):
         if db_alias is None:
             db_alias = DEFAULT_DB_ALIAS
-        atomic_caches = self.atomic_caches[db_alias].pop().values()
+        try:
+            atomic_caches = self.atomic_caches[db_alias].pop().values()
+        except IndexError:
+            atomic_caches = EMPTY_CACHE.values()
         if commit:
             to_be_invalidated = set()
             for atomic_cache in atomic_caches:
