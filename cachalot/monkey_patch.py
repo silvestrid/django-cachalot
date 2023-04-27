@@ -11,6 +11,8 @@ from django.db.models.sql.compiler import (
 )
 from django.db.transaction import Atomic, get_connection
 
+from psycopg2.sql import Composed
+
 from .api import invalidate, LOCAL_STORAGE
 from .cache import cachalot_caches
 from .settings import cachalot_settings, ITERABLES
@@ -140,6 +142,8 @@ def _patch_cursor():
                 if getattr(connection, 'raw', True):
                     if isinstance(sql, bytes):
                         sql = sql.decode('utf-8')
+                    elif isinstance(sql, Composed):
+                        sql = sql.as_string(cursor.cursor)
                     sql = sql.lower()
                     if SQL_DATA_CHANGE_RE.search(sql):
                         tables = filter_cachable(
